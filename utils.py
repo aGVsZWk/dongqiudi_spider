@@ -31,4 +31,4 @@ def CreateTable():
     metadata.create_all()
 
 if __name__ == '__main__':
-    ConEngine()
+    CreateTable()
