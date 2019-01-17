@@ -57,7 +57,7 @@ class DongQiuDiApp(object):
                 d['name'] = team['name']
                 d['team_id'] = team['id']
                 d['object_id'] = team['object_id']
-                self.mysqlDo.saveData(self.teamTable, d)
+                self.mysqlDo.saveData(self.teamTable, [d])
                 print(d)
 
     def getArticleId(self, pageNum):
@@ -78,7 +78,7 @@ class DongQiuDiApp(object):
             for article in data['articles']:
                l.append(article['id'])
             urlArticleNextPage = data['next']
-            print("第{}页获取完成".format(i+1))
+            print("第{}页文章获取完成".format(i+1))
         return l
 
     def getCommentUser(self, article_id):
@@ -118,31 +118,64 @@ class DongQiuDiApp(object):
         return userSet
 
 
-    def writeUserInfo(self):
-        articleIdList = dongqiudi.getArticleId(1)
-        # articleIdList = [article for dateArticleList in articleIdList for article in dateArticleList]
 
+
+
+    def writeArticleId(self, pageNum):
+        articleIdList = dongqiudi.getArticleId(pageNum)
+        # articleIdList = [article for dateArticleList in articleIdList for article in dateArticleList]
         with open('article_id.txt', "wb") as f:
             f.write(str(articleIdList).encode(encoding='utf-8'))
 
-        userIdList = []
-        crawledArticleIdList = []
-        for articleId in articleIdList:
-            print("正在获取文章{}评论用户".format(articleId))
-            userSet = self.getCommentUser(articleId)
-            userIdList.append([articleId, str(userSet)])
-            crawledArticleIdList.append(articleId)
 
-        with open('result.txt',"wb") as f:
-            f.write(str(userIdList).encode('utf-8'))
+
+
+    def writeUserInfo(self):
+
+        with open("article_id.txt","rb") as f:
+            d = f.readlines()
+        articleIdList = eval(d[0])   # 使用eval, 省去解码
+
+        crawledArticleIdList = []
+        count = 0
+        totalUsers = 0
+        l = []
+        for articleId in articleIdList:
+            print("正在获取第{}篇文章{}评论用户,".format(count+1,articleId))
+            userSet = self.getCommentUser(articleId)
+            totalUsers += len(userSet)
+            d = dict()
+            d["article_id"] = articleId
+            d["user_id_set"] = str(userSet)
+            l.append(d)
+            crawledArticleIdList.append(articleId)
+            count += 1
+
+            if count % 20 == 0:
+                self.mysqlDo.saveData(self.article_comment_user_table, l)
+                l = []
+                with open("crawled_article.txt", "ab") as f:
+                    f.write(str(crawledArticleIdList).encode(encoding='utf-8'))
+                # todo 待完成crawled_article, 格式转成一个列表
+                # todo 待记录爬取的总用户数
+
+            # article_comment_user_table = Table('article_comment_user', self.metadata,
+            #                                    Column('id', Integer, primary_key=True),
+            #                                    Column('article_id', String(20)),
+            #                                    Column('user_id_set', String(10000))
+            #                                    )
+
+        # with open('result.txt',"wb") as f:
+        #     f.write(str(userIdList).encode('utf-8'))
+        #
+
+
 
 if __name__ == '__main__':
 
     dongqiudi = DongQiuDiApp()
-    # dongqiudi.dBDeal()
-    # dongqiudi.getTeamInfo()
-    # art =
-    # dongqiudi.getArticleCommentUser()
-    # s = dongqiudi.getCommentUser(896482)
-    # print(s)
+    dongqiudi.dBDeal()
+    # dongqiudi.writeTeamInfo()
+
+    # dongqiudi.writeArticleId(100)
     dongqiudi.writeUserInfo()

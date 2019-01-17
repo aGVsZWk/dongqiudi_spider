@@ -7,6 +7,7 @@ from constant import DB_CONNECT_STRING
 
 
 class MysqlDo(object):
+
     def connectionMysql(self):
         self.engine = create_engine(DB_CONNECT_STRING, echo=True)
         self.metadata = MetaData(self.engine)
@@ -24,7 +25,7 @@ class MysqlDo(object):
         article_comment_user_table = Table('article_comment_user', self.metadata,
                                            Column('id', Integer, primary_key=True),
                                            Column('article_id', String(20)),
-                                           Column('user_id_set', String(10000))
+                                           Column('user_id_set', String(100000))
                                            )
         self.metadata.create_all()
         return team_table, article_comment_user_table
@@ -33,7 +34,7 @@ class MysqlDo(object):
         ins = tableName.insert()
         # ins.values(data)
         conn = self.engine.connect()
-        result = conn.execute(ins,[data])
+        result = conn.execute(ins, data)
 
 
 
