@@ -18,7 +18,7 @@ class DongQiuDiApp(object):
     def dBDeal(self):
         self.mysqlDo = MysqlDo()
         self.mysqlDo.connectionMysql()
-        self.teamTable, self.article_comment_user_table = self.mysqlDo.createTable()
+        self.teamTable, self.article_comment_user_table, self.userTable = self.mysqlDo.createTable()
 
     def writeTeamInfo(self):
         """
@@ -117,6 +117,32 @@ class DongQiuDiApp(object):
         userSet.discard('99999999')
         return userSet
 
+    def getUserInfo(self, userId):
+        """
+        获取某个用户的信息
+        :param userId: 用户id
+        :return: 用户id，用户名，性别，创建时间，地区id，地区名，球队id，介绍，timeline total，发表数，回复数，被点赞数，关注数，被关注数
+        """
+
+        r = requests.get(url='https://api.dongqiudi.com/users/profile/{}'.format(userId),headers=self.headers)
+        data = json.loads(r.text)
+        d = {}
+        d["user_id"] = data['user'].get('user_id',userId)
+        d['user_name'] = data['user']['username']
+        d['gender'] = data['user'].get('gender', None)
+        d['created_at'] = data['user']['created_at']
+        d['region_id'] = data['user']['region']['id'] if data['user']['region'] else None
+        d['region_phrase'] = data['user']['region']['phrase'] if data['user']['region'] else None
+        d['team_id'] = data['user'].get('team_id', None)
+        d['introduction'] = data['user']['introduction']
+        d['timeline_total'] = data['user']['timeline_total']
+        d['post_total'] = data['user']['post_total']
+        d['reply_total'] = data['user']['reply_total']
+        d['up_total'] = data['user']['up_total']
+        d['following_total'] = data['user']['following_total']
+        d['followers_total'] = data['user']['followers_total']
+        print(d)
+        return d
 
 
 
@@ -154,10 +180,10 @@ class DongQiuDiApp(object):
             if count % 20 == 0:
                 self.mysqlDo.saveData(self.article_comment_user_table, l)
                 l = []
-                with open("crawled_article.txt", "ab") as f:
+            if count % 50 == 0:
+                with open("crawled_article.txt", "wb") as f:
                     f.write(str(crawledArticleIdList).encode(encoding='utf-8'))
-                # todo 待完成crawled_article, 格式转成一个列表
-                # todo 待记录爬取的总用户数
+
 
             # article_comment_user_table = Table('article_comment_user', self.metadata,
             #                                    Column('id', Integer, primary_key=True),
@@ -170,6 +196,41 @@ class DongQiuDiApp(object):
         #
 
 
+    def writeUserList(self):
+        """
+        将待爬取的用户id列表写入 user_id_set.txt
+        :return:
+        """
+        value = self.mysqlDo.showData('select * from article_comment_user;')
+        user_id_set = set()
+        for i in value:
+            d = eval(i[2])
+            user_id_set.update(d)
+        print("共获取了{}用户".format(user_id_set))
+
+        with open('user_id_set.txt', 'wb') as f:
+            f.write(str(list(user_id_set)).encode(encoding='utf-8'))
+
+        # 获取用户信息, 写入user表
+        insertData = list()
+        count = 0
+        crawedUser = []
+        for userID in user_id_set:
+            try:
+                userInfo = self.getUserInfo(userID)
+            except:
+                continue
+            insertData.append(userInfo)
+            crawedUser.append(userID)
+            count += 1
+            if count % 100 ==0:
+                self.mysqlDo.saveData(self.userTable, insertData)
+                print("正在插入用户数据")
+                insertData = list()
+                with open('crawed_user.txt',"wb") as f:
+                    f.write(str(crawedUser).encode(encoding='utf-8'))
+
+
 
 if __name__ == '__main__':
 
@@ -178,4 +239,8 @@ if __name__ == '__main__':
     # dongqiudi.writeTeamInfo()
 
     # dongqiudi.writeArticleId(100)
-    dongqiudi.writeUserInfo()
+    # dongqiudi.writeUserInfo()
+    # dongqiudi.writeUserList()
+    # dongqiudi.getUserInfo('5595749')
+    # dongqiudi.getUserInfo('1553838')
+    dongqiudi.writeUserList()
