@@ -236,9 +236,9 @@ if __name__ == '__main__':
 
     dongqiudi = DongQiuDiApp()
     dongqiudi.dBDeal()
-    # dongqiudi.writeTeamInfo()
+    dongqiudi.writeTeamInfo()
 
-    # dongqiudi.writeArticleId(100)
+    # dongqiudi.writeArticleId(3000)
     # dongqiudi.writeUserInfo()
     # dongqiudi.writeUserList()
     # dongqiudi.getUserInfo('5595749')
