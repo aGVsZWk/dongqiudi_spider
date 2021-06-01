@@ -10,4 +10,4 @@ PyMySQL==0.9.3
 PySocks==1.6.8
 requests==2.21.0
 SQLAlchemy==1.2.16
-urllib3==1.24.1
+urllib3==1.26.5
